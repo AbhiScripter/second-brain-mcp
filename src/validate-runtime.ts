@@ -1,0 +1,7 @@
+import { spawn } from "node:child_process";
+const root = import.meta.dirname + "/.."; const store = process.env.MCP_STORE_PATH;
+if (!store) throw new Error("MCP_STORE_PATH is required.");
+const child = spawn(process.execPath, ["--experimental-strip-types", "src/mcp-server.ts"], { cwd: root, env: { ...process.env, MCP_STORE_PATH: store }, stdio: ["pipe", "pipe", "pipe"] }); let buffer = ""; const waiters = new Map<number, (value: any) => void>();
+child.stdout.on("data", chunk => { buffer += chunk; const lines = buffer.split("\n"); buffer = lines.pop() ?? ""; for (const line of lines) { const value = JSON.parse(line); if (typeof value.id === "number") waiters.get(value.id)?.(value); } });
+const call = (id: number, method: string, params: unknown) => new Promise<any>((resolve, reject) => { waiters.set(id, resolve); child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n"); setTimeout(() => reject(new Error(method)), 10_000); });
+await call(1, "initialize", { protocolVersion: "2026-07-28", capabilities: {}, clientInfo: { name: "release-validator", version: "1" } }); child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n"); const tools = await call(2, "tools/list", {}); const diagnostics = await call(3, "tools/call", { name: "get_runtime_diagnostics", arguments: {} }); child.kill(); const data = JSON.parse(diagnostics.result.content[0].text); if (tools.result.tools.length !== 13 || data.toolCount !== 13) throw new Error("Expected 13 MCP tools."); console.log(JSON.stringify(data));

@@ -1,0 +1,28 @@
+{
+  "name": "second-brain-m1-local-poc",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "node --experimental-strip-types src/cli.ts demo",
+    "demo:m2": "node --experimental-strip-types src/m2-demo.ts",
+    "demo:m3": "npm run demo:m2 && node --experimental-strip-types src/m3-demo.ts",
+    "demo:m3_8": "node --experimental-strip-types src/m3_8-demo.ts",
+    "demo:m3_9": "node --experimental-strip-types src/m3_9-demo.ts",
+    "test:m1": "node --experimental-strip-types test/brain.test.ts",
+    "test:m2": "node --experimental-strip-types test/whatsapp.test.ts",
+    "test:m3": "node --experimental-strip-types test/mcp.test.ts",
+    "test:m3_8": "node --experimental-strip-types test/youtube.test.ts",
+    "test:m3_9": "node --experimental-strip-types test/write-ingestion.test.ts",
+    "test:m4_0": "node --experimental-strip-types test/m4_0.test.ts",
+    "test:m4_1": "node --experimental-strip-types test/m4_1_plugin.test.ts",
+    "test:m4_2": "node --experimental-strip-types test/m4_2_persistence.test.ts",
+    "test:m4_3": "node --experimental-strip-types test/m4_3.test.ts",
+    "test:multilingual": "node --experimental-strip-types test/multilingual-retrieval.test.ts",
+    "mcp": "node --experimental-strip-types src/mcp-server.ts",
+    "test": "node --experimental-strip-types test/brain.test.ts && node --experimental-strip-types test/whatsapp.test.ts && node --experimental-strip-types test/mcp.test.ts && node --experimental-strip-types test/youtube.test.ts && node --experimental-strip-types test/write-ingestion.test.ts && node --experimental-strip-types test/m4_0.test.ts && node --experimental-strip-types test/m4_1_plugin.test.ts && node --experimental-strip-types test/m4_2_persistence.test.ts && node --experimental-strip-types test/m4_3.test.ts && node --experimental-strip-types test/multilingual-retrieval.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "zod": "^4.6.7"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "second_brain": {
+      "command": "node",
+      "args": ["--experimental-strip-types", "/path/to/second-brain-mcp/src/mcp-server.ts"],
+      "cwd": "/path/to/second-brain-mcp",
+      "env": { "MCP_STORE_PATH": "/absolute/path/to/local/store.json" }
+    }
+  }
+}

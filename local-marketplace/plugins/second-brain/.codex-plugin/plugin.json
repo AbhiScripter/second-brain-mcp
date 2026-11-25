@@ -1,0 +1,17 @@
+{
+  "name": "second-brain",
+  "version": "0.5.0-alpha",
+  "description": "Private, local Second Brain MCP plugin with approved ingestion and precise source retrieval.",
+  "mcpServers": "./.mcp.json",
+  "requires_local_executor": true,
+  "interface": {
+    "displayName": "Second Brain",
+    "shortDescription": "Knowledge retrieval plus approval-gated YouTube bookmarks.",
+    "longDescription": "Local retrieval with citations and one confirmation-gated YouTube save tool; no download or transcription occurs without an authorized transcript.",
+    "developerName": "Local Second Brain",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["What decisions were recorded for the synthetic example project?", "Save this YouTube video as a bookmark and ask for confirmation before writing."],
+    "brandColor": "#10A37F"
+  }
+}

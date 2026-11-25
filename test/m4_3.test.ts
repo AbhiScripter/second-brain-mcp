@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { emptyStore } from "../src/brain.ts";
+import { TranscriptAcquisitionService } from "../src/m4_0.ts";
+const dir = await mkdtemp(join(tmpdir(), "second-brain-m4-3-")); const file = join(dir, "transcript.txt");
+const text = Array.from({ length: 900 }, (_, index) => `Concept: प्रणाली ${index} — A Hinglish technical explanation for distributed system design and retry safety.`).join("\n\n");
+await writeFile(file, text, "utf8"); const checksum = createHash("sha256").update(text).digest("hex"); const store = emptyStore(); const service = new TranscriptAcquisitionService();
+const output = await service.processFile(store, { approved: true, confirmation: "APPROVE_TRANSCRIPT_FILE_PROCESSING", url: "https://www.youtube.com/watch?v=5ozClNjO44A", requestedAt: "2026-11-25T00:00:00.000Z", method: "uploaded_file", rightsStatus: "authorized", filePath: file, expectedSha256: checksum, chunkChars: 7000, overlapChars: 500 });
+assert.equal(output.state, "studied"); const record = store.learningRecords[0]; assert.equal(record.transcriptChecksum, checksum); assert.equal(store.sources[0].original, text); assert.ok((record.chunks?.length ?? 0) > 1); assert.equal(record.chunks?.at(-1)?.end, text.length); assert.equal(record.segments[0].startSeconds, undefined); console.log("PASS: M4.3 verified local-file ingestion, Unicode-safe chunks, offsets, and full coverage");

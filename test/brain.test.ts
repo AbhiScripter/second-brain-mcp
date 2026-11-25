@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { answer, backup, emptyStore, exportMarkdown, ingest, loadStore, reviseSource, saveStore } from "../src/brain.ts";
+const note = `Meeting: Example onboarding planning\nParticipants: ExampleUserA, ExampleUserB\nProject: Example Onboarding\nDecision: Use a source-backed local prototype.\nFollow-up: ExampleUserB will review the tracker by 2026-12-01.\nLogic: Records need exact source citations.`;
+const store = emptyStore(); assert.equal(ingest(store, "meeting_note", note, "2026-11-23T09:00:00Z").duplicate, false); assert.equal(ingest(store, "meeting_note", note, "2026-11-23T09:00:00Z").duplicate, true); ingest(store, "spreadsheet_link", "https://example.invalid/example-onboarding-tracker", "2026-11-23T09:05:00Z");
+assert.deepEqual(new Set(store.entities.map(e => e.type)), new Set(["meeting", "person", "project", "document", "decision", "follow_up", "logic", "resource"])); assert.match(answer(store, "ExampleUserA onboarding"), /\[source_/);
+assert.equal(store.entities.every(e => e.sourceSpan[0] >= 0 && e.sourceSpan[1] > e.sourceSpan[0]), true);
+const firstSource = store.sources[0]; reviseSource(store, firstSource.id, `${note}\nLogic: Version two keeps source snapshots.`, "2026-11-24T09:00:00Z"); assert.equal(firstSource.versions.length, 2); assert.equal(firstSource.versions[0].original, note);
+const dir = await mkdtemp(join(tmpdir(), "brain-test-")); const db = join(dir, "store.json"); await saveStore(db, store); await backup(db, join(dir, "backup.json")); assert.equal((await loadStore(db)).sources.length, 2); assert.equal((await readFile(join(dir, "backup.json"), "utf8")).includes("sources"), true); await exportMarkdown(store, join(dir, "export"));
+console.log("PASS: deduplication, typed extraction, citations, persistence, backup, Markdown export");

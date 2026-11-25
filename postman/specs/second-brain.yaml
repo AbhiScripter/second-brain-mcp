@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info: { title: Second Brain local ingestion and retrieval, version: 0.5.0-alpha }
+paths:
+  /mcp/search_transcript_chunks:
+    post:
+      summary: Search bounded transcript chunks with exact supporting citations
+      responses: { '200': { description: Ranked chunk hits and pagination cursor } }
+  /mcp/get_source_range:
+    post:
+      summary: Read a bounded source range with exact offsets and continuation
+      responses: { '200': { description: Exact source excerpt and next offset } }
+  /mcp/process_authorized_transcript_file:
+    post:
+      summary: Process an authorized local file without sending transcript contents over MCP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [url, approved, confirmation, method, rightsStatus, filePath, expectedSha256]
+              properties:
+                url: { type: string, format: uri }
+                approved: { type: boolean, enum: [true] }
+                confirmation: { type: string, enum: [APPROVE_TRANSCRIPT_FILE_PROCESSING] }
+                method: { type: string, enum: [uploaded_file] }
+                rightsStatus: { type: string, enum: [authorized] }
+                filePath: { type: string }
+                expectedSha256: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+      responses:
+        '200': { description: Processing state and coverage metadata }

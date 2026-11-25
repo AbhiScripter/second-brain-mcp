@@ -1,0 +1,4 @@
+import { emptyStore, ingestYouTubeLearning } from "./brain.ts";
+import { KnowledgeCore } from "./mcp-core.ts";
+const store = emptyStore(); ingestYouTubeLearning(store, { approved: true, url: "https://youtu.be/AbCdEf12345", receivedAt: "2026-11-24T09:00:00.000Z", title: "Synthetic Agent Memory Podcast", transcriptOrigin: "authorized_caption", transcript: `[00:00:05] ExampleInstructor: Concept: Agent memory — Durable, source-backed state for an agent.\n[00:00:22] ExampleInstructor: Claim: Agent memory needs provenance before automation.\n[00:00:40] ExampleParticipant: Example: A timestamped transcript segment lets retrieval cite a claim.\n[00:01:05] ExampleInstructor: Project: Second Brain` });
+const core = new KnowledgeCore({ read: async () => store }); console.log(JSON.stringify({ teaching: await core.search("agent memory"), projectConnection: await core.search("Second Brain"), unsupported: await core.search("independently verified fact") }, null, 2));

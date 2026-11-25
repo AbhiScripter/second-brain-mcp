@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { emptyStore } from "../src/brain.ts";
+import { KnowledgeCore } from "../src/mcp-core.ts";
+import { TranscriptAcquisitionService } from "../src/m4_0.ts";
+const store = emptyStore(); const service = new TranscriptAcquisitionService();
+const url = "https://www.youtube.com/watch?v=RZC4x6g7Zsk";
+const blocked = await service.request(store, { approved: true, confirmation: "APPROVE_TRANSCRIPT_ACQUISITION", url, requestedAt: "2026-11-24T10:00:00.000Z", method: "authorized_youtube_captions", rightsStatus: "not_confirmed" });
+assert.equal(blocked.state, "permission_required"); assert.equal(store.sources.length, 1);
+const studied = service.process(store, { approved: true, confirmation: "APPROVE_TRANSCRIPT_PROCESSING", url: "https://youtu.be/AbCdEf12345", requestedAt: "2026-11-24T10:01:00.000Z", method: "uploaded_file", rightsStatus: "authorized", format: "vtt", title: "Permitted sample", transcript: "WEBVTT\n\n00:00:05.000 --> 00:00:09.000\nExampleInstructor: Concept: Provenance — Evidence keeps a claim traceable.\n\n00:00:10.000 --> 00:00:14.000\nExampleInstructor: Claim: Timestamped retrieval supports review." });
+assert.equal(studied.state, "studied"); const found = await new KnowledgeCore({ read: async () => store }).search("Provenance");
+assert.equal(found.status, "ok"); assert.match(found.data[0].citations[0].timestampUrl!, /&t=5s/);
+console.log("PASS: M4.0 permission gate, permitted VTT processing, and timestamped retrieval");

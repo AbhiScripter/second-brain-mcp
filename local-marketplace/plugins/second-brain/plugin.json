@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "second-brain",
+  "version": "0.5.0-alpha",
+  "description": "Private, local Second Brain retrieval with exact source ranges plus approval-controlled transcript processing.",
+  "author": {
+    "name": "Local Second Brain"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["second-brain", "knowledge", "mcp", "local", "approval-gated"],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "interface": {
+        "displayName": "Second Brain",
+        "shortDescription": "Local knowledge retrieval and approved transcript processing.",
+        "longDescription": "Search local Second Brain evidence with citations. Process only a permitted TXT, SRT, or VTT transcript after explicit confirmation. It never downloads media, scrapes captions, or calls external providers.",
+        "developerName": "Local Second Brain",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "defaultPrompt": [
+          "What decisions were recorded for the synthetic example project?",
+          "Find the synthetic project document and cite its original source.",
+          "Process my permitted VTT transcript only after confirming rights and approval."
+        ],
+        "brandColor": "#10A37F"
+      }
+    }
+  }
+}

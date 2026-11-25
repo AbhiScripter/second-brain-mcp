@@ -1,0 +1,11 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { backup, answer, exportMarkdown, ingest, loadStore, saveStore } from "./brain.ts";
+const root = join(dirname(fileURLToPath(import.meta.url)), ".."); const storePath = join(root, "data", "store.json");
+if (process.argv[2] !== "demo") throw new Error("Use: npm run demo");
+const store = await loadStore(storePath);
+const note = `Meeting: Example onboarding planning\nParticipants: ExampleUserA, ExampleUserB\nProject: Example Onboarding\nDecision: Use a source-backed local prototype.\nFollow-up: ExampleUserB will review the tracker by 2026-12-01.\nLogic: Records need exact source citations.`;
+console.log("meeting:", ingest(store, "meeting_note", note, "2026-11-23T09:00:00Z").duplicate ? "duplicate" : "saved");
+console.log("sheet:", ingest(store, "spreadsheet_link", "https://example.invalid/example-onboarding-tracker", "2026-11-23T09:05:00Z").duplicate ? "duplicate" : "saved");
+await saveStore(storePath, store); await exportMarkdown(store, join(root, "exports")); await backup(storePath, join(root, "backups", "store.snapshot.json"));
+console.log(answer(store, "What did ExampleUserA tell me about onboarding?"));

@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { emptyStore, loadStore, saveLearningSource, saveStore } from "../src/brain.ts";
+import { KnowledgeCore } from "../src/mcp-core.ts";
+
+const url = "https://www.youtube.com/watch?v=RZC4x6g7Zsk";
+const approval = { approved: true as const, confirmation: "APPROVE_SAVE_LEARNING_SOURCE" as const };
+const store = emptyStore();
+assert.throws(() => saveLearningSource(store, { ...approval, url: "https://example.com/video", addedAt: "2026-11-24T00:00:00.000Z" }), /YouTube/);
+assert.throws(() => saveLearningSource(store, { approved: true, confirmation: "NO", url, addedAt: "2026-11-24T00:00:00.000Z" } as never), /approval/);
+const bookmark = saveLearningSource(store, { ...approval, url, title: "M3.9 bookmark-only fixture", tags: ["agents", "memory"], project: "Second Brain", userNote: "No transcript authorized.", addedAt: "2026-11-24T00:00:00.000Z" });
+assert.equal(bookmark.duplicate, false); assert.equal(bookmark.ingestionStatus, "awaiting_transcript"); assert.equal(store.sources.length, 1); assert.equal(store.learningRecords[0].segments.length, 0);
+const repeated = saveLearningSource(store, { ...approval, url: "https://youtu.be/RZC4x6g7Zsk", addedAt: "2026-11-24T00:01:00.000Z" });
+assert.equal(repeated.duplicate, true); assert.equal(store.sources.length, 1);
+const transcript = "[00:00] ExampleInstructor: Concept: Agent memory - source-backed context retained across tasks.\n[00:12] ExampleInstructor: Claim: Memory should preserve provenance.\n[00:24] Host: Project: Second Brain\n[00:30] Host: Follow-up: Validate citations.";
+const enriched = saveLearningSource(store, { ...approval, url, transcript, transcriptOrigin: "user_transcript", addedAt: "2026-11-24T00:02:00.000Z" });
+assert.equal(enriched.source.id, bookmark.source.id); assert.equal(enriched.revised, true); assert.equal(enriched.ingestionStatus, "ingested_transcript"); assert.equal(store.sources.length, 1); assert.equal(store.sources[0].revision, 2); assert.equal(store.learningRecords[0].segments.length, 4);
+const temp = await mkdtemp(join(tmpdir(), "second-brain-m3_9-")); const path = join(temp, "store.json"); await saveStore(path, store); const reloaded = await loadStore(path); assert.equal(reloaded.sources[0].external?.externalId, "RZC4x6g7Zsk"); assert.equal((await new KnowledgeCore({ read: async () => reloaded }).documentsAndLinks("RZC4x6g7Zsk")).status, "ok");
+
+const projectRoot = join(import.meta.dirname, ".."); const m2Path = join(projectRoot, "m2-demo-data", "store.json"); await saveStore(m2Path, emptyStore());
+const child = spawn(process.execPath, ["--experimental-strip-types", "src/mcp-server.ts"], { cwd: projectRoot, env: { ...process.env, MCP_STORE_PATH: m2Path }, stdio: ["pipe", "pipe", "pipe"] }); let buffer = ""; const responses = new Map<number, (value: any) => void>(); child.stdout.on("data", chunk => { buffer += chunk; for (const line of buffer.split("\n").slice(0, -1)) { const message = JSON.parse(line); if (typeof message.id === "number") responses.get(message.id)?.(message); } buffer = buffer.includes("\n") ? buffer.slice(buffer.lastIndexOf("\n") + 1) : buffer; });
+const call = (id: number, method: string, params: unknown) => new Promise<any>((resolve, reject) => { responses.set(id, resolve); child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n"); setTimeout(() => reject(new Error(`MCP timeout: ${method}`)), 5_000); });
+await call(1, "initialize", { protocolVersion: "2026-07-28", capabilities: {}, clientInfo: { name: "m3_9-test", version: "1" } }); child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
+const invalid = await call(2, "tools/call", { name: "save_learning_source", arguments: { ...approval, url, arbitraryPath: "/etc/passwd" } }); assert.ok(invalid.error || invalid.result?.isError);
+const write = await call(3, "tools/call", { name: "save_learning_source", arguments: { ...approval, url, title: "M3.9 real URL bookmark-only test", tags: ["youtube"] } }); const writeData = JSON.parse(write.result.content[0].text); assert.equal(writeData.ingestionStatus, "awaiting_transcript");
+const duplicate = await call(4, "tools/call", { name: "save_learning_source", arguments: { ...approval, url } }); assert.equal(JSON.parse(duplicate.result.content[0].text).duplicate, true);
+const found = await call(5, "tools/call", { name: "find_documents_and_links", arguments: { query: "RZC4x6g7Zsk" } }); assert.match(found.result.content[0].text, /RZC4x6g7Zsk/); child.kill();
+const persisted = await loadStore(m2Path); assert.equal(persisted.sources.length, 1); assert.equal(persisted.learningRecords[0].ingestionStatus, "awaiting_transcript");
+console.log("PASS: approval-gated YouTube bookmark write, validation, idempotency, revision, persistence, and MCP retrieval");
